@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import json
 import os
+from pdf_processor import PDFProcessor
 
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = "compound-beta"
@@ -38,7 +39,9 @@ def test_llm_api(prompt, api_key):
 def main():
     st.title("🔍 Document Search RAG Prototype")
     st.markdown("This is a mini prototype of a RAG (Retrieval-Augmented Generation) system for document search.")
-    st.markdown("### Testing LLM API Integration")
+    
+    # Initialize PDF processor
+    pdf_processor = PDFProcessor()
     
     # Sidebar for configuration
     st.sidebar.header("Configuration")
@@ -46,7 +49,72 @@ def main():
     
     # Main content
     st.markdown("---")
-
+    
+    # PDF Upload Section
+    st.subheader("📄 PDF Document Upload")
+    
+    uploaded_file = st.file_uploader(
+        "Choose a PDF file",
+        type=['pdf'],
+        help="Upload a PDF file to extract text and store in database"
+    )
+    
+    if uploaded_file is not None:
+        st.success(f"✅ File uploaded: {uploaded_file.name}")
+        
+        # Extract text from PDF
+        with st.spinner("Extracting text from PDF..."):
+            result = pdf_processor.extract_text_from_pdf(uploaded_file)
+        
+        if result["success"]:
+            st.success(f"✅ Text extracted successfully! ({result['page_count']} pages)")
+            
+            # Show more detailed information
+            if "total_chars" in result:
+                st.info(f"📊 Total characters extracted: {result['total_chars']}")
+            
+            # Show extracted text preview
+            with st.expander("📖 View extracted text (first 500 characters)"):
+                preview = result["content"][:500] + "..." if len(result["content"]) > 500 else result["content"]
+                st.text(preview)
+                
+                # Show warning if content is very short
+                if len(result["content"]) < 100:
+                    st.warning("⚠️ Very little text extracted. This PDF might contain only images or be a scanned document.")
+            
+            # Save to database
+            if st.button("💾 Save to Database"):
+                if pdf_processor.save_document_to_db(result["filename"], result["content"], result["page_count"]):
+                    st.success("✅ Document saved to database!")
+                else:
+                    st.error("❌ Failed to save document to database.")
+        else:
+            st.error(f"❌ Error extracting text: {result['error']}")
+    
+    st.markdown("---")
+    
+    # Document Management Section
+    st.subheader("📚 Document Management")
+    
+    # Show all documents
+    documents = pdf_processor.get_all_documents()
+    
+    if documents:
+        st.write(f"**Total documents in database: {len(documents)}**")
+        
+        for doc in documents:
+            with st.expander(f"📄 {doc['filename']} ({doc['page_count']} pages)"):
+                st.write(f"**Uploaded:** {doc['upload_date']}")
+                st.write(f"**Content preview:**")
+                preview = doc['content'][:300] + "..." if len(doc['content']) > 300 else doc['content']
+                st.text(preview)
+    else:
+        st.info("No documents uploaded yet. Upload a PDF to get started!")
+    
+    st.markdown("---")
+    
+    # LLM Testing Section
+    st.markdown("### Testing LLM API Integration")
     
     test_prompt = st.text_area(
         "Enter test prompt:",
