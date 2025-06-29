@@ -77,7 +77,20 @@ Please provide a comprehensive answer based on the document excerpts above. If t
 
 def main():
     st.title("🔍 Document Search RAG Prototype")
-    st.markdown("This is a mini prototype of a RAG (Retrieval-Augmented Generation) system for document search.")
+    
+    # Simple user-friendly description
+    st.markdown("""
+    
+    This application helps you **search and ask questions about your PDF documents** using AI. 
+    
+    ### How to use this app:
+    
+    1. **📄 Upload a PDF** - Upload any PDF document you want to search through
+    2. **💾 Save to Database** - Store your document so the AI can access it
+    3. **🤖 Ask Questions** - Type questions about your documents and get AI-powered answers
+    4. **🔍 Search Documents** - Find specific parts of your documents that match your question
+
+    """)
     
     pdf_processor = PDFProcessor()
     rag_processor = RAGProcessor()
@@ -180,66 +193,73 @@ def main():
         help="Ask questions about your uploaded documents"
     )
     
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("🔍 Search Documents"):
-            if search_query:
-                with st.spinner("Searching documents..."):
-                    results = rag_processor.search_documents(search_query, top_k=3)
+    if st.button("🤖 Ask RAG"):
+        if search_query and api_key:
+            with st.spinner("Generating RAG response..."):
+                context = rag_processor.get_rag_context(search_query, top_k=3)
                 
-                if results:
-                    st.success(f"✅ Found {len(results)} relevant excerpts")
+                if context:
+                    response = rag_llm_api(search_query, context, api_key)
+                    st.success("✅ RAG response generated!")
+                    st.write("**Answer:**")
+                    st.write(response)
                     
-                    for result in results:
-                        with st.expander(f"📄 {result['filename']} (Score: {result['similarity_score']:.3f})"):
-                            st.write(result['chunk_text'])
+                    with st.expander("📖 Context used"):
+                        st.write(context)
                 else:
-                    st.warning("No relevant documents found. Try a different query.")
-            else:
-                st.error("Please enter a search query.")
+                    st.warning("No relevant context found. Try a different question.")
+        elif not api_key:
+            st.error("❌ Please enter Groq API key in the sidebar")
+        else:
+            st.error("Please enter a question.")
     
-    with col2:
-        if st.button("🤖 Ask RAG"):
-            if search_query and api_key:
-                with st.spinner("Generating RAG response..."):
-                    context = rag_processor.get_rag_context(search_query, top_k=3)
-                    
-                    if context:
-                        response = rag_llm_api(search_query, context, api_key)
-                        st.success("✅ RAG response generated!")
-                        st.write("**Answer:**")
-                        st.write(response)
-                        
-                        with st.expander("📖 Context used"):
-                            st.write(context)
-                    else:
-                        st.warning("No relevant context found. Try a different question.")
-            elif not api_key:
-                st.error("❌ Please enter Groq API key in the sidebar")
+    if st.button("🔍 Search Documents"):
+        if search_query:
+            with st.spinner("Searching documents..."):
+                results = rag_processor.search_documents(search_query, top_k=3)
+            
+            if results:
+                st.success(f"✅ Found {len(results)} relevant excerpts")
+                
+                for result in results:
+                    with st.expander(f"📄 {result['filename']} (Score: {result['similarity_score']:.3f})"):
+                        st.write(result['chunk_text'])
             else:
-                st.error("Please enter a question.")
+                st.warning("No relevant documents found. Try a different query.")
+        else:
+            st.error("Please enter a search query.")
     
     st.markdown("---")
     
-    st.markdown("### Testing LLM API Integration")
+    st.subheader("🔄 Compare: RAG vs Regular AI")
     
-    test_prompt = st.text_area(
-        "Enter test prompt:",
-        value="",
-        height=100
+    st.markdown("""
+    **Test the difference:** Ask the same question to both systems and see how they respond differently.
+    
+    - **🤖 RAG (above):** Uses your uploaded documents to provide accurate, fact-based answers
+    - **🧠 Regular AI (below):** Relies only on its general knowledge (may not know about your specific documents)
+    """)
+    
+    comparison_prompt = st.text_area(
+        "Enter the same question you asked above:",
+        value=search_query if search_query else "",
+        height=100,
+        help="Try asking the same question to see the difference between RAG and regular AI"
     )
     
-    if st.button("Test LLM API"):
-        if api_key:
-            with st.spinner("Calling Groq LLM..."):
-                response = test_llm_api(test_prompt, api_key)
-                st.success("✅ API call successful!")
-                st.write("**Response:**")
+    if st.button("🧠 Ask Regular AI (No Document Context)"):
+        if api_key and comparison_prompt:
+            with st.spinner("Calling AI without document context..."):
+                response = test_llm_api(comparison_prompt, api_key)
+                st.success("✅ Regular AI response generated!")
+                st.write("**Regular AI Answer (no document context):**")
                 st.write(response)
-        else:
+                
+                st.info("💡 **Notice the difference:** The regular AI can only use its general knowledge, while RAG above used your specific documents!")
+        elif not api_key:
             st.error("❌ Please enter Groq API key in the sidebar")
-            st.info("💡 Groq is completely free with 100 requests/day limit")
+        else:
+            st.error("Please enter a question to compare.")
 
 if __name__ == "__main__":
     main() 
