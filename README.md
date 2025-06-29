@@ -6,26 +6,6 @@ This is a **Retrieval-Augmented Generation (RAG)** prototype that demonstrates h
 The application combines document processing, semantic search, and AI-powered question answering to create a comprehensive
 document management solution.
 
-### Key Features:
-
-**📄 Document Processing:**
-
-- Upload PDF documents and extract text content
-- Automatic text extraction with page-by-page analysis
-- Store documents in a SQLite database for persistent storage
-
-**🔍 Semantic Search:**
-
-- Convert document text into vector embeddings using AI models
-- Perform semantic similarity search to find relevant document excerpts
-- Use FAISS (Facebook AI Similarity Search) for fast vector retrieval
-
-**🤖 AI-Powered Answers:**
-
-- Generate intelligent responses based on document content
-- Combine retrieved document excerpts with Large Language Model (LLM) processing
-- Provide context-aware answers that reference specific document sections
-
 ### How it works:
 
 1. **Upload & Process:** Upload a PDF document, extract text, and save to database
