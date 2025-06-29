@@ -1,0 +1,32 @@
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# FAISS indexes and embeddings
+*.idx
+*.pkl
+faiss_index.*
+document_chunks.*
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Environment variables
+.env
+.env.local
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log 
